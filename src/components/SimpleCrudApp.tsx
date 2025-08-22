@@ -157,7 +157,7 @@ const SimpleCrudApp: React.FC = () => {
     if (!confirm('⚠️ WARNING: This will permanently delete this row from the database!\n\nThis action cannot be undone. Are you absolutely sure?')) return;
     
     try {
-      const response = await fetch(`/api/tables/${selectedTable}/rows/${id}`, {
+      const response = await fetch(`/api/tables/${selectedTable}/rows/${id}/hard-delete`, {
         method: 'DELETE'
       });
       
@@ -539,38 +539,34 @@ const SimpleCrudApp: React.FC = () => {
                           </button>
                           
                           {/* Fully Delete button - appears on hover */}
-                          {!
-                            tableSchema.some(col => col.column_name === 'is_deleted') && (
-                              <button
-                                data-fully-delete
-                                onClick={() => handleFullyDelete(row.id)}
-                                style={{
-                                  position: 'absolute',
-                                  top: '-8px',
-                                  right: '-8px',
-                                  width: '20px',
-                                  height: '20px',
-                                  padding: '0',
-                                  backgroundColor: '#dc0000',
-                                  color: 'white',
-                                  border: '2px solid white',
-                                  borderRadius: '50%',
-                                  cursor: 'pointer',
-                                  fontSize: '12px',
-                                  fontWeight: 'bold',
-                                  display: 'none',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                                  zIndex: 10,
-                                  transition: 'all 0.2s ease-in-out'
-                                }}
-                                title="Permanently delete this row from database"
-                              >
-                                ✕
-                              </button>
-                            )
-                          }
+                          <button
+                            data-fully-delete
+                            onClick={() => handleFullyDelete(row.id)}
+                            style={{
+                              position: 'absolute',
+                              top: '-8px',
+                              right: '-8px',
+                              width: '20px',
+                              height: '20px',
+                              padding: '0',
+                              backgroundColor: '#dc0000',
+                              color: 'white',
+                              border: '2px solid white',
+                              borderRadius: '50%',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: 'bold',
+                              display: 'none',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                              zIndex: 10,
+                              transition: 'all 0.2s ease-in-out'
+                            }}
+                            title="Permanently delete this row from database"
+                          >
+                            ✕
+                          </button>
                         </div>
                       </div>
                     )}
