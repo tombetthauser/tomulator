@@ -104,7 +104,7 @@ const SimpleCrudApp: React.FC = () => {
     setEditingRow(rowIndex);
   };
 
-  const handleSave = async (rowIndex: number) => {
+  const handleSave = async (rowIndex: number): Promise<boolean> => {
     const rowData = tableData[rowIndex];
     try {
       const response = await fetch(`/api/tables/${selectedTable}/rows/${rowData.id}`, {
@@ -116,15 +116,30 @@ const SimpleCrudApp: React.FC = () => {
       if (response.ok) {
         setEditingRow(null);
         fetchTableData(selectedTable);
+        return true;
       }
     } catch (error) {
       console.error('Error updating row:', error);
     }
+    return false;
   };
 
   const handleCancel = () => {
     setEditingRow(null);
     fetchTableData(selectedTable); // Refresh to reset any changes
+  };
+
+  const handleRowClick = async (rowIndex: number) => {
+    // If clicking the same row, ensure it's in edit mode
+    if (editingRow === null) {
+      setEditingRow(rowIndex);
+      return;
+    }
+    if (editingRow === rowIndex) return;
+    const saved = await handleSave(editingRow);
+    if (saved) {
+      setEditingRow(rowIndex);
+    }
   };
 
   const handleDelete = async (row: any) => {
@@ -215,7 +230,7 @@ const SimpleCrudApp: React.FC = () => {
     return 'text';
   };
 
-  const renderInput = (column: TableSchema, value: any, onChange: (value: any) => void, isNewRow: boolean = false) => {
+  const renderInput = (column: TableSchema, value: any, onChange: (value: any) => void, onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>) => void) => {
     const inputType = getInputType(column.column_name, column.data_type);
     
     if (inputType === 'select' && column.column_name === 'is_deleted') {
@@ -223,6 +238,8 @@ const SimpleCrudApp: React.FC = () => {
         <select
           value={value || 'false'}
           onChange={(e) => onChange(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={onKeyDown}
           style={{
             width: '100%',
             padding: '4px',
@@ -242,6 +259,8 @@ const SimpleCrudApp: React.FC = () => {
           type="number"
           value={value || 0}
           onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={onKeyDown}
           style={{
             width: '100%',
             padding: '4px',
@@ -257,6 +276,8 @@ const SimpleCrudApp: React.FC = () => {
         type="text"
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={onKeyDown}
         style={{
           width: '100%',
           padding: '4px',
@@ -331,7 +352,7 @@ const SimpleCrudApp: React.FC = () => {
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '14px' }}>
                     {col.column_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
                   </label>
-                  {renderInput(col, newRow[col.column_name], (value) => handleNewRowChange(col.column_name, value), true)}
+                  {renderInput(col, newRow[col.column_name], (value) => handleNewRowChange(col.column_name, value))}
                 </div>
               );
             })}
@@ -417,8 +438,9 @@ const SimpleCrudApp: React.FC = () => {
               {filteredData.map((row, rowIndex) => (
                 <tr key={row.id || rowIndex} style={{ 
                   backgroundColor: rowIndex % 2 === 0 ? '#ffffff' : '#f8f9fa',
-                  borderBottom: '1px solid #dee2e6'
-                }}>
+                  borderBottom: '1px solid #dee2e6',
+                  cursor: 'pointer'
+                }} onClick={() => handleRowClick(rowIndex)}>
                   {tableSchema.map(col => (
                     <td key={col.column_name} style={{ 
                       padding: '8px', 
@@ -426,7 +448,18 @@ const SimpleCrudApp: React.FC = () => {
                       fontSize: '14px'
                     }}>
                       {editingRow === rowIndex && col.column_name !== 'id' && col.column_name !== 'created_at' ? (
-                        renderInput(col, row[col.column_name], (value) => handleInputChange(rowIndex, col.column_name, value))
+                        renderInput(
+                          col,
+                          row[col.column_name],
+                          (value) => handleInputChange(rowIndex, col.column_name, value),
+                          (e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleSave(rowIndex);
+                            }
+                          }
+                        )
                       ) : (
                         <span style={{ 
                           color: col.column_name === 'is_deleted' && row[col.column_name] === 'true' ? '#dc3545' : 'inherit',
@@ -441,11 +474,11 @@ const SimpleCrudApp: React.FC = () => {
                     {editingRow === rowIndex ? (
                       <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
                         <button
-                          onClick={() => handleSave(rowIndex)}
+                          onClick={(e) => { e.stopPropagation(); handleSave(rowIndex); }}
                           style={{
                             padding: '6px 12px',
-                            backgroundColor: '#28a745',
-                            color: 'white',
+                            // backgroundColor: '#28a745',
+                            // color: 'white',
                             border: 'none',
                             borderRadius: '3px',
                             cursor: 'pointer',
@@ -453,14 +486,14 @@ const SimpleCrudApp: React.FC = () => {
                             fontWeight: 'bold'
                           }}
                         >
-                          💾 Save
+                          Save
                         </button>
                         <button
-                          onClick={handleCancel}
+                          onClick={(e) => { e.stopPropagation(); handleCancel(); }}
                           style={{
                             padding: '6px 12px',
-                            backgroundColor: '#6c757d',
-                            color: 'white',
+                            // backgroundColor: '#6c757d',
+                            // color: 'white',
                             border: 'none',
                             borderRadius: '3px',
                             cursor: 'pointer',
@@ -468,13 +501,13 @@ const SimpleCrudApp: React.FC = () => {
                             fontWeight: 'bold'
                           }}
                         >
-                          ❌ Cancel
+                          Cancel
                         </button>
                       </div>
                     ) : (
                       <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
                         <button
-                          onClick={() => handleEdit(rowIndex)}
+                          onClick={(e) => { e.stopPropagation(); handleEdit(rowIndex); }}
                           style={{
                             padding: '6px 12px',
                             // backgroundColor: '#007bff',`
@@ -504,7 +537,7 @@ const SimpleCrudApp: React.FC = () => {
                           }}
                         >
                           <button
-                            onClick={() => handleDelete(row)}
+                            onClick={(e) => { e.stopPropagation(); handleDelete(row); }}
                             disabled={!tableSchema.some(col => 
                               col.column_name === 'is_deleted'
                             )}
@@ -535,7 +568,7 @@ const SimpleCrudApp: React.FC = () => {
                           {/* Fully Delete button - appears on hover */}
                           <button
                             data-fully-delete
-                            onClick={() => handleFullyDelete(row.id)}
+                            onClick={(e) => { e.stopPropagation(); handleFullyDelete(row.id); }}
                             style={{
                               position: 'absolute',
                               top: '-8px',
