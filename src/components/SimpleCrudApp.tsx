@@ -435,7 +435,7 @@ const SimpleCrudApp: React.FC = () => {
         <h1 className="page-title">Tomulator Database Manager Test App</h1>
         <button
           onClick={() => navigate('/new-table')}
-          className="btn btn-primary"
+          className="btn"
         >
           + Create New Table
         </button>

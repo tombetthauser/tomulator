@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface ColumnDefinition {
@@ -25,6 +25,9 @@ const NewTableCreator: React.FC = () => {
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isResizing, setIsResizing] = useState(false);
+  const [currentResizer, setCurrentResizer] = useState<number | null>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
 
   const dataTypes = [
     'SERIAL',
@@ -192,6 +195,56 @@ const NewTableCreator: React.FC = () => {
     return type === 'SERIAL' || isAutoIncrement;
   };
 
+  const startResize = (e: React.MouseEvent, columnIndex: number) => {
+    e.preventDefault();
+    setIsResizing(true);
+    setCurrentResizer(columnIndex);
+    
+    const startX = e.clientX;
+    const th = tableRef.current?.querySelector(`th:nth-child(${columnIndex + 1})`) as HTMLElement;
+    const startWidth = th?.getBoundingClientRect().width || 0;
+    
+    // Add visual feedback
+    if (th) {
+      th.style.backgroundColor = 'rgba(0, 123, 255, 0.1)';
+    }
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing || currentResizer === null) return;
+      
+      const deltaX = e.clientX - startX;
+      const newWidth = Math.max(80, startWidth + deltaX); // Minimum width of 80px
+      
+      if (th) {
+        th.style.width = `${newWidth}px`;
+        th.style.minWidth = `${newWidth}px`;
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      setCurrentResizer(null);
+      
+      // Remove visual feedback
+      if (th) {
+        th.style.backgroundColor = '';
+      }
+      
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Prevent text selection during resize
+  const handleMouseDown = (e: React.MouseEvent, columnIndex: number) => {
+    if (e.target === e.currentTarget) {
+      startResize(e, columnIndex);
+    }
+  };
+
   return (
     <div className="page-container">
       <div className="header-container-large">
@@ -231,23 +284,23 @@ const NewTableCreator: React.FC = () => {
             <button
               type="button"
               onClick={addColumn}
-              className="btn btn-success"
+              className="btn"
             >
               + Add Column
             </button>
           </div>
 
           <div className="table-container">
-            <table className="table-bordered">
+            <table className="table-bordered" ref={tableRef}>
               <thead>
                 <tr>
-                  <th>Column Name</th>
-                  <th>Data Type</th>
-                  <th className="center">Nullable</th>
-                  <th className="center">Primary Key</th>
-                  <th className="center">Auto Increment</th>
-                  <th>Default Value</th>
-                  <th className="center">Actions</th>
+                  <th onMouseDown={(e) => handleMouseDown(e, 0)}>Column Name</th>
+                  <th onMouseDown={(e) => handleMouseDown(e, 1)}>Data Type</th>
+                  <th className="center" onMouseDown={(e) => handleMouseDown(e, 2)}>Nullable</th>
+                  <th className="center" onMouseDown={(e) => handleMouseDown(e, 3)}>Primary Key</th>
+                  <th className="center" onMouseDown={(e) => handleMouseDown(e, 4)}>Auto Increment</th>
+                  <th onMouseDown={(e) => handleMouseDown(e, 5)}>Default Value</th>
+                  <th className="center" onMouseDown={(e) => handleMouseDown(e, 6)}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -311,7 +364,7 @@ const NewTableCreator: React.FC = () => {
                         type="button"
                         onClick={() => removeColumn(index)}
                         disabled={column.isPrimaryKey}
-                        className={`btn btn-danger ${column.isPrimaryKey ? '' : ''}`}
+                        className={`btn`}
                         style={{
                           cursor: column.isPrimaryKey ? 'not-allowed' : 'pointer',
                           opacity: column.isPrimaryKey ? 0.6 : 1
@@ -331,7 +384,7 @@ const NewTableCreator: React.FC = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`btn btn-primary btn-large ${isSubmitting ? 'btn-secondary' : ''}`}
+            className={`btn ${isSubmitting ? 'btn-secondary' : ''}`}
             style={{ marginRight: '15px' }}
           >
             {isSubmitting ? 'Creating Table...' : 'Create Table'}
@@ -340,7 +393,7 @@ const NewTableCreator: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="btn btn-secondary btn-large"
+            className="btn"
           >
             Cancel
           </button>
