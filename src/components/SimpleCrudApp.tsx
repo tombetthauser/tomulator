@@ -128,32 +128,22 @@ const SimpleCrudApp: React.FC = () => {
   };
 
   const handleDelete = async (row: any) => {
-    // Check if table has an "is_deleted" column
-    const hasIsDeletedColumn = tableSchema.some(col => 
-      col.column_name === 'is_deleted'
-    );
-    
-    if (!hasIsDeletedColumn) {
-      alert('Delete functionality is disabled for tables without an "is_deleted" column.');
-      return;
-    }
-    
+    // Only proceed if table has an "is_deleted" column
+    const hasIsDeletedColumn = tableSchema.some(col => col.column_name === 'is_deleted');
+    if (!hasIsDeletedColumn) return;
+
     const currentlyDeleted = String(row['is_deleted']) === 'true';
-    const actionWord = currentlyDeleted ? 'restore (un-delete)' : 'soft delete';
-    if (!confirm(`Are you sure you want to ${actionWord} this row?`)) return;
-    
     try {
       const response = await fetch(`/api/tables/${selectedTable}/rows/${row.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_deleted: currentlyDeleted ? 'false' : 'true' })
       });
-      
       if (response.ok) {
         fetchTableData(selectedTable);
       }
     } catch (error) {
-      console.error('Error deleting row:', error);
+      console.error('Error toggling soft delete:', error);
     }
   };
 
@@ -621,7 +611,7 @@ const SimpleCrudApp: React.FC = () => {
           <p style={{ marginBottom: '20px' }}>
             Select a table from the dropdown above to view and edit data.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginTop: '30px' }}>
+          {/* <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginTop: '30px' }}>
             {tables.slice(0, 4).map(table => (
               <div key={table.table_name} style={{ 
                 padding: '20px', 
@@ -638,7 +628,7 @@ const SimpleCrudApp: React.FC = () => {
                 </p>
               </div>
             ))}
-          </div>
+          </div> */}
         </div>
       )}
     </div>
