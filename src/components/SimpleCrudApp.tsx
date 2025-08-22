@@ -330,7 +330,7 @@ const SimpleCrudApp: React.FC = () => {
                 return null;
               }
               return (
-                <div key={col.column_name}>
+                <div key={col.column_name} style={{ display: col.column_name === 'is_deleted' ? 'none' : 'inline-block' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '14px' }}>
                     {col.column_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
                   </label>
@@ -343,8 +343,8 @@ const SimpleCrudApp: React.FC = () => {
             onClick={handleAddRow}
             style={{
               padding: '10px 20px',
-              backgroundColor: '#4CAF50',
-              color: 'white',
+              // backgroundColor: '#4CAF50',
+              // color: 'white',
               border: 'none',
               borderRadius: '4px',
               cursor: 'pointer',
@@ -352,7 +352,7 @@ const SimpleCrudApp: React.FC = () => {
               fontWeight: 'bold'
             }}
           >
-            ➕ Add New Row
+            Add Row
           </button>
         </div>
       )}
@@ -480,8 +480,8 @@ const SimpleCrudApp: React.FC = () => {
                           onClick={() => handleEdit(rowIndex)}
                           style={{
                             padding: '6px 12px',
-                            backgroundColor: '#007bff',
-                            color: 'white',
+                            // backgroundColor: '#007bff',`
+                            // color: 'white',
                             border: 'none',
                             borderRadius: '3px',
                             cursor: 'pointer',
@@ -489,7 +489,7 @@ const SimpleCrudApp: React.FC = () => {
                             fontWeight: 'bold'
                           }}
                         >
-                          ✏️ Edit
+                          Edit
                         </button>
                         <div 
                           style={{ 
@@ -513,10 +513,10 @@ const SimpleCrudApp: React.FC = () => {
                             )}
                             style={{
                               padding: '6px 12px',
-                              backgroundColor: tableSchema.some(col => 
-                                col.column_name === 'is_deleted'
-                              ) ? '#dc3545' : '#6c757d',
-                              color: 'white',
+                              // backgroundColor: tableSchema.some(col => 
+                              //   col.column_name === 'is_deleted'
+                              // ) ? '#dc3545' : '#6c757d',
+                              // color: 'white',
                               border: 'none',
                               borderRadius: '3px',
                               cursor: tableSchema.some(col => 
@@ -526,13 +526,13 @@ const SimpleCrudApp: React.FC = () => {
                               fontWeight: 'bold',
                               opacity: tableSchema.some(col => 
                                 col.column_name === 'is_deleted'
-                              ) ? 1 : 0.6
+                              ) ? 1 : 0.7
                             }}
                             title={tableSchema.some(col => 
                               col.column_name === 'is_deleted'
                             ) ? 'Delete this row' : 'Delete functionality disabled - table missing "is_deleted" column'}
                           >
-                            🗑️ Delete
+                            Delete
                           </button>
                           
                           {/* Fully Delete button - appears on hover */}
