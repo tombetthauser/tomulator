@@ -1,0 +1,28 @@
+{
+  "name": "tomulator-crud",
+  "version": "1.0.0",
+  "description": "Generic CRUD app with Bun, Postgres, React and HTML tables",
+  "main": "index.js",
+  "scripts": {
+    "dev": "bun run --hot src/index.tsx",
+    "build": "bun build src/index.tsx --outdir dist && cp src/index.html dist/",
+    "start": "bun run src/server.ts",
+    "build:server": "bun build src/server.ts --outdir dist --target node"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "pg": "^8.11.3",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@types/pg": "^8.10.9",
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
