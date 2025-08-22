@@ -22,6 +22,7 @@ const SimpleCrudApp: React.FC = () => {
   const [newRow, setNewRow] = useState<Record<string, any>>({});
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [hideDeleted, setHideDeleted] = useState<boolean>(false);
 
   // Fetch all tables on component mount
   useEffect(() => {
@@ -36,19 +37,27 @@ const SimpleCrudApp: React.FC = () => {
     }
   }, [selectedTable]);
 
-  // Filter data when search term changes
+  // Filter data when search term, table data, schema, or hideDeleted changes
   useEffect(() => {
+    const hasIsDeletedColumn = tableSchema.some(col => col.column_name === 'is_deleted');
+    let workingData = tableData;
+
+    if (hideDeleted && hasIsDeletedColumn) {
+      workingData = workingData.filter(row => String(row['is_deleted']) !== 'true');
+    }
+
     if (searchTerm.trim() === '') {
-      setFilteredData(tableData);
+      setFilteredData(workingData);
     } else {
-      const filtered = tableData.filter(row => 
-        Object.values(row).some(value => 
-          value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      const lowered = searchTerm.toLowerCase();
+      const filtered = workingData.filter(row =>
+        Object.values(row).some(value =>
+          value && value.toString().toLowerCase().includes(lowered)
         )
       );
       setFilteredData(filtered);
     }
-  }, [searchTerm, tableData]);
+  }, [searchTerm, tableData, tableSchema, hideDeleted]);
 
   const fetchTables = async () => {
     try {
@@ -380,6 +389,16 @@ const SimpleCrudApp: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <h4 style={{ color: '#444', margin: 0 }}>Table Data</h4>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {tableSchema.some(col => col.column_name === 'is_deleted') && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#444', fontSize: '14px' }}>
+                  <input
+                    type="checkbox"
+                    checked={hideDeleted}
+                    onChange={(e) => setHideDeleted(e.target.checked)}
+                  />
+                  Hide deleted
+                </label>
+              )}
               <input
                 type="text"
                 placeholder="Search in all fields..."
