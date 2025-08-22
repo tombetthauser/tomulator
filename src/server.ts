@@ -81,6 +81,21 @@ app.delete('/api/tables/:tableName/rows/:id', async (req, res) => {
   }
 });
 
+// Hard delete endpoint - permanently removes row from database
+app.delete('/api/tables/:tableName/rows/:id/hard-delete', async (req, res) => {
+  try {
+    const { tableName, id } = req.params;
+    const success = await deleteRow(tableName, parseInt(id), true); // true for hard delete
+    if (success) {
+      res.json({ message: 'Row permanently deleted successfully' });
+    } else {
+      res.status(404).json({ error: 'Row not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to permanently delete row' });
+  }
+});
+
 // Serve React app for all other routes
 app.get('*', (req, res) => {
   res.sendFile('dist/index.html', { root: '.' });

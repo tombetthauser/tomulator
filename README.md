@@ -68,12 +68,45 @@ bun run start
 
 The application will be available at `http://localhost:3000`
 
-### 5. Development Mode (Optional)
+### 5. Development Mode (Recommended)
 
-For development with hot reloading:
+For development with automatic rebuilding and restarting:
 
 ```bash
-bun run dev
+# Option 1: Use the development script (recommended)
+./dev.sh
+
+# Option 2: Manual development mode
+bun run dev:full
+```
+
+**What happens automatically:**
+- ✅ Frontend rebuilds when you change React components
+- ✅ Backend restarts when you change server code  
+- ✅ Hot reloading in the browser
+- ✅ No manual restarting needed!
+
+**Development Scripts:**
+- `bun run dev:full` - Start both frontend and backend with auto-restart
+- `bun run dev:client` - Start only frontend with hot reloading
+- `bun run dev:server` - Start only backend with auto-restart
+
+## Available Scripts
+
+```bash
+# Development
+bun run dev:full      # Start both frontend and backend with auto-restart
+bun run dev:client    # Start only frontend with hot reloading  
+bun run dev:server    # Start only backend with auto-restart
+./dev.sh              # Development script with setup checks
+
+# Building
+bun run build         # Build frontend for production
+bun run build:server  # Build backend for production
+
+# Production
+bun run start         # Start development server
+bun run start:prod    # Start production server from dist/
 ```
 
 ## Project Structure

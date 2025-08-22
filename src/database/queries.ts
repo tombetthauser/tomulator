@@ -84,8 +84,31 @@ export async function updateRow(tableName: string, id: number, data: Record<stri
 }
 
 // Delete row
-export async function deleteRow(tableName: string, id: number): Promise<boolean> {
-  const query = `DELETE FROM ${tableName} WHERE id = $1`;
-  const result = await pool.query(query, [id]);
-  return result.rowCount > 0;
+export async function deleteRow(tableName: string, id: number, hardDelete: boolean = false): Promise<boolean> {
+  if (hardDelete) {
+    // Hard delete - permanently remove from database
+    const query = `DELETE FROM ${tableName} WHERE id = $1`;
+    const result = await pool.query(query, [id]);
+    return result.rowCount > 0;
+  } else {
+    // Soft delete - check if table has is_deleted column
+    const schemaQuery = `
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = $1 AND column_name = 'is_deleted'
+    `;
+    const schemaResult = await pool.query(schemaQuery, [tableName]);
+    
+    if (schemaResult.rows.length > 0) {
+      // Table has is_deleted column, perform soft delete
+      const query = `UPDATE ${tableName} SET is_deleted = 'true' WHERE id = $1`;
+      const result = await pool.query(query, [id]);
+      return result.rowCount > 0;
+    } else {
+      // Table doesn't have is_deleted column, perform hard delete
+      const query = `DELETE FROM ${tableName} WHERE id = $1`;
+      const result = await pool.query(query, [id]);
+      return result.rowCount > 0;
+    }
+  }
 }

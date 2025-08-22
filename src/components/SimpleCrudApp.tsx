@@ -128,6 +128,16 @@ const SimpleCrudApp: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
+    // Check if table has an "is_deleted" column
+    const hasIsDeletedColumn = tableSchema.some(col => 
+      col.column_name === 'is_deleted'
+    );
+    
+    if (!hasIsDeletedColumn) {
+      alert('Delete functionality is disabled for tables without an "is_deleted" column.');
+      return;
+    }
+    
     if (!confirm('Are you sure you want to delete this row?')) return;
     
     try {
@@ -140,6 +150,25 @@ const SimpleCrudApp: React.FC = () => {
       }
     } catch (error) {
       console.error('Error deleting row:', error);
+    }
+  };
+
+  const handleFullyDelete = async (id: number) => {
+    if (!confirm('⚠️ WARNING: This will permanently delete this row from the database!\n\nThis action cannot be undone. Are you absolutely sure?')) return;
+    
+    try {
+      const response = await fetch(`/api/tables/${selectedTable}/rows/${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        fetchTableData(selectedTable);
+      } else {
+        alert('Failed to delete row. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error fully deleting row:', error);
+      alert('Error deleting row. Please try again.');
     }
   };
 
@@ -258,7 +287,7 @@ const SimpleCrudApp: React.FC = () => {
 
   return (
     <div className="crud-app" style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1 style={{ color: '#333', marginBottom: '20px' }}>Tomulator Database Manager</h1>
+      <h1 style={{ color: '#333', marginBottom: '20px' }}>Tomulator Database Manager v0.2</h1>
       
       <div style={{ marginBottom: '20px' }}>
         <label htmlFor="table-select" style={{ marginRight: '10px', fontWeight: 'bold' }}>
@@ -462,21 +491,84 @@ const SimpleCrudApp: React.FC = () => {
                         >
                           ✏️ Edit
                         </button>
-                        <button
-                          onClick={() => handleDelete(row.id)}
-                          style={{
-                            padding: '6px 12px',
-                            backgroundColor: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '3px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: 'bold'
+                        <div 
+                          style={{ 
+                            position: 'relative', 
+                            display: 'inline-block',
+                            cursor: 'default'
+                          }}
+                          onMouseEnter={(e) => {
+                            const fullyDeleteBtn = e.currentTarget.querySelector('[data-fully-delete]') as HTMLElement;
+                            if (fullyDeleteBtn) fullyDeleteBtn.style.display = 'flex';
+                          }}
+                          onMouseLeave={(e) => {
+                            const fullyDeleteBtn = e.currentTarget.querySelector('[data-fully-delete]') as HTMLElement;
+                            if (fullyDeleteBtn) fullyDeleteBtn.style.display = 'none';
                           }}
                         >
-                          🗑️ Delete
-                        </button>
+                          <button
+                            onClick={() => handleDelete(row.id)}
+                            disabled={!tableSchema.some(col => 
+                              col.column_name === 'is_deleted'
+                            )}
+                            style={{
+                              padding: '6px 12px',
+                              backgroundColor: tableSchema.some(col => 
+                                col.column_name === 'is_deleted'
+                              ) ? '#dc3545' : '#6c757d',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '3px',
+                              cursor: tableSchema.some(col => 
+                                col.column_name === 'is_deleted'
+                              ) ? 'pointer' : 'not-allowed',
+                              fontSize: '12px',
+                              fontWeight: 'bold',
+                              opacity: tableSchema.some(col => 
+                                col.column_name === 'is_deleted'
+                              ) ? 1 : 0.6
+                            }}
+                            title={tableSchema.some(col => 
+                              col.column_name === 'is_deleted'
+                            ) ? 'Delete this row' : 'Delete functionality disabled - table missing "is_deleted" column'}
+                          >
+                            🗑️ Delete
+                          </button>
+                          
+                          {/* Fully Delete button - appears on hover */}
+                          {!
+                            tableSchema.some(col => col.column_name === 'is_deleted') && (
+                              <button
+                                data-fully-delete
+                                onClick={() => handleFullyDelete(row.id)}
+                                style={{
+                                  position: 'absolute',
+                                  top: '-8px',
+                                  right: '-8px',
+                                  width: '20px',
+                                  height: '20px',
+                                  padding: '0',
+                                  backgroundColor: '#dc0000',
+                                  color: 'white',
+                                  border: '2px solid white',
+                                  borderRadius: '50%',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: 'bold',
+                                  display: 'none',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                                  zIndex: 10,
+                                  transition: 'all 0.2s ease-in-out'
+                                }}
+                                title="Permanently delete this row from database"
+                              >
+                                ✕
+                              </button>
+                            )
+                          }
+                        </div>
                       </div>
                     )}
                   </td>
