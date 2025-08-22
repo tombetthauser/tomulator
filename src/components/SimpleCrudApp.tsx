@@ -35,6 +35,8 @@ const SimpleCrudApp: React.FC = () => {
   const [resizeStartX, setResizeStartX] = useState<number>(0);
   const [resizeColumn, setResizeColumn] = useState<string>('');
   const [resizeStartWidth, setResizeStartWidth] = useState<number>(0);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [isDeletingTable, setIsDeletingTable] = useState<boolean>(false);
 
   // Default column widths
   const defaultColumnWidth = 150;
@@ -322,6 +324,42 @@ const SimpleCrudApp: React.FC = () => {
     }
   };
 
+  const handleDeleteTable = async () => {
+    if (!selectedTable) return;
+    
+    setIsDeletingTable(true);
+    try {
+      const response = await fetch(`/api/tables/${selectedTable}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        // Remove the deleted table from the tables list
+        setTables(prev => prev.filter(table => table.table_name !== selectedTable));
+        
+        // Reset the current table selection and data
+        setSelectedTable('');
+        setTableData([]);
+        setTableSchema([]);
+        setFilteredData([]);
+        
+        // Close the modal
+        setShowDeleteModal(false);
+        
+        // Show success message
+        alert(`Table "${selectedTable}" has been permanently deleted.`);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to delete table: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting table:', error);
+      alert('Error deleting table. Please try again.');
+    } finally {
+      setIsDeletingTable(false);
+    }
+  };
+
   const handleAddRow = async () => {
     try {
       const response = await fetch(`/api/tables/${selectedTable}/rows`, {
@@ -492,17 +530,10 @@ const SimpleCrudApp: React.FC = () => {
 
       {selectedTable && (
         <div style={{ marginBottom: '20px' }}>
-          <div className="controls-container">
-            <h4 className="section-title-no-margin">Table Data</h4>
-            <div className="controls-right">
-              <button
-                onClick={() => fetchTableData(selectedTable)}
-                className="btn"
-                title="Refresh table data from database"
-              >
-                Reload Table
-              </button>
-              <label className="control-item">
+                     <div className="controls-container">
+             <h4 className="section-title-no-margin">Table Data</h4>
+             <div className="controls-right">
+             <label className="control-item">
                 <input
                   type="checkbox"
                   checked={wordWrap}
@@ -510,10 +541,28 @@ const SimpleCrudApp: React.FC = () => {
                 />
                 Word wrap
               </label>
-              <span className="control-hint">
+              {/* <span className="control-hint">
                 💡 Drag column edges to resize
-              </span>
-              <button
+              </span> */}
+
+              {tableSchema.some(col => col.column_name === 'is_deleted') && (
+                <label className="control-item">
+                  <input
+                    type="checkbox"
+                    checked={hideDeleted}
+                    onChange={(e) => setHideDeleted(e.target.checked)}
+                  />
+                  Hide deleted
+                </label>
+              )}
+               <button
+                 onClick={() => fetchTableData(selectedTable)}
+                 className="btn"
+                 title="Refresh table data from database"
+               >
+                 Reload Table
+               </button>
+               <button
                 onClick={() => {
                   const initialWidths: ColumnWidths = {};
                   tableSchema.forEach(col => {
@@ -534,16 +583,13 @@ const SimpleCrudApp: React.FC = () => {
               >
                 Reset Columns
               </button>
-              {tableSchema.some(col => col.column_name === 'is_deleted') && (
-                <label className="control-item">
-                  <input
-                    type="checkbox"
-                    checked={hideDeleted}
-                    onChange={(e) => setHideDeleted(e.target.checked)}
-                  />
-                  Hide deleted
-                </label>
-              )}
+              <button
+                 onClick={() => setShowDeleteModal(true)}
+                 className="btn"
+                 title="Delete this table and all its data permanently"
+               >
+                 Delete Table
+               </button>
               <input
                 type="text"
                 placeholder="Search in all fields..."
@@ -741,6 +787,53 @@ const SimpleCrudApp: React.FC = () => {
               </div>
             ))}
           </div> */}
+        </div>
+      )}
+
+      {/* Delete Table Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title">⚠️ Delete Table Confirmation</h3>
+            </div>
+            <div className="modal-body">
+              <p className="modal-text">
+                <strong>WARNING: This action cannot be undone!</strong>
+              </p>
+              <p className="modal-text">
+                You are about to permanently delete the table <strong>"{selectedTable}"</strong> and <strong>ALL</strong> of its data.
+              </p>
+              <p className="modal-text">
+                This will:
+              </p>
+              <ul className="modal-list">
+                <li>Remove the table structure completely</li>
+                <li>Delete all rows and data permanently</li>
+                <li>Remove any associated indexes or constraints</li>
+                <li>This action cannot be reversed</li>
+              </ul>
+              <p className="modal-text">
+                Are you absolutely sure you want to proceed?
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="btn"
+                disabled={isDeletingTable}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteTable}
+                className="btn btn-danger"
+                disabled={isDeletingTable}
+              >
+                {isDeletingTable ? 'Deleting...' : 'Yes, Delete Table Permanently'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

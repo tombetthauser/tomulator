@@ -12,6 +12,7 @@ A simple, generic CRUD (Create, Read, Update, Delete) application built with Bun
 - **Responsive Design**: Clean, modern UI with HTML tables
 - **Table Creation**: Create new database tables with custom columns and data types
 - **Navigation**: Easy navigation between database management and table creation
+- **Table Deletion**: Safely delete entire tables with confirmation dialogs
 
 ## Tech Stack
 
@@ -172,6 +173,7 @@ The application works with your actual database tables:
 - `PUT /api/tables/:tableName/rows/:id` - Update row
 - `DELETE /api/tables/:tableName/rows/:id` - Delete row
 - `POST /api/tables/create` - Create new table
+- `DELETE /api/tables/:tableName` - Delete table
 
 ## Table Creation Feature
 
@@ -205,6 +207,37 @@ The application now includes a powerful table creation feature that allows you t
 - Consider adding an `is_deleted` column for soft delete functionality
 - VARCHAR and CHAR columns require specifying a length
 - Primary key columns cannot be nullable
+
+## Table Deletion Feature
+
+The application now includes a safe table deletion feature that allows you to:
+
+- **Delete Entire Tables**: Remove tables and all their data permanently
+- **Confirmation Dialog**: Multiple warning levels to prevent accidental deletion
+- **Cascade Deletion**: Removes all associated data, indexes, and constraints
+- **State Management**: Automatically updates the UI after table deletion
+
+### How to Use
+
+1. Select a table from the dropdown in the main database manager
+2. Click the **"🗑️ Delete Table"** button in the Table Data controls section
+3. Review the detailed warning message in the confirmation modal
+4. Confirm the deletion by clicking **"Yes, Delete Table Permanently"**
+5. The table will be permanently removed from the database
+
+### Safety Features
+
+- **Multiple Warning Levels**: Clear warnings about permanent data loss
+- **Confirmation Required**: Must explicitly confirm the deletion action
+- **Detailed Information**: Shows exactly what will be deleted
+- **Disabled During Operation**: Button is disabled while deletion is in progress
+
+### ⚠️ Important Notes
+
+- **Permanent Action**: Table deletion cannot be undone
+- **All Data Lost**: All rows, indexes, and constraints are permanently removed
+- **Use with Caution**: Only delete tables when you're absolutely certain
+- **Backup Recommended**: Consider backing up important data before deletion
 
 ## Usage
 

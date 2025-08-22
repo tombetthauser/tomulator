@@ -187,3 +187,10 @@ export async function createTable(tableName: string, columns: Array<{
     await pool.query(addCreatedAtQuery);
   }
 }
+
+// Delete table
+export async function deleteTable(tableName: string): Promise<void> {
+  // Drop the table - this will permanently delete all data
+  const dropTableQuery = `DROP TABLE IF EXISTS ${tableName} CASCADE`;
+  await pool.query(dropTableQuery);
+}

@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllTables, getTableSchema, getTableData, insertRow, updateRow, deleteRow, createTable } from './database/queries';
+import { getAllTables, getTableSchema, getTableData, insertRow, updateRow, deleteRow, createTable, deleteTable } from './database/queries';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -112,6 +112,26 @@ app.post('/api/tables/create', async (req, res) => {
     console.error('Create table error:', error);
     res.status(500).json({ 
       error: 'Failed to create table', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Delete table endpoint
+app.delete('/api/tables/:tableName', async (req, res) => {
+  try {
+    const { tableName } = req.params;
+    
+    if (!tableName) {
+      return res.status(400).json({ error: 'Table name is required' });
+    }
+    
+    await deleteTable(tableName);
+    res.json({ message: `Table "${tableName}" deleted successfully` });
+  } catch (error) {
+    console.error('Delete table error:', error);
+    res.status(500).json({ 
+      error: 'Failed to delete table', 
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
