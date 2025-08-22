@@ -323,6 +323,9 @@ const SimpleCrudApp: React.FC = () => {
             {getTableDescription(selectedTable)}
           </p>
           
+          <div>
+            
+          </div>
           <h4 style={{ color: '#444', marginBottom: '10px' }}>Add New Row</h4>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '20px' }}>
             {tableSchema.map(col => {
@@ -330,7 +333,7 @@ const SimpleCrudApp: React.FC = () => {
                 return null;
               }
               return (
-                <div key={col.column_name} style={{ display: col.column_name === 'is_deleted' ? 'none' : 'inline-block' }}>
+                <div key={col.column_name} style={{ display: col.column_name === 'is_deleted' ? 'none' : 'inline-block', marginRight: '10px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '14px' }}>
                     {col.column_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
                   </label>
