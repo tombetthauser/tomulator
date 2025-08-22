@@ -123,8 +123,11 @@ const SimpleCrudApp: React.FC = () => {
       });
       
       if (response.ok) {
+        // Update local state directly instead of refetching
+        const updatedData = [...tableData];
+        updatedData[rowIndex] = { ...rowData };
+        setTableData(updatedData);
         setEditingRow(null);
-        fetchTableData(selectedTable);
         return true;
       }
     } catch (error) {
@@ -135,7 +138,8 @@ const SimpleCrudApp: React.FC = () => {
 
   const handleCancel = () => {
     setEditingRow(null);
-    fetchTableData(selectedTable); // Refresh to reset any changes
+    // Reset the row data to original values by refetching just this row
+    fetchTableData(selectedTable);
   };
 
   const handleRowClick = async (rowIndex: number) => {
@@ -164,7 +168,13 @@ const SimpleCrudApp: React.FC = () => {
         body: JSON.stringify({ is_deleted: currentlyDeleted ? 'false' : 'true' })
       });
       if (response.ok) {
-        fetchTableData(selectedTable);
+        // Update local state directly instead of refetching
+        const updatedData = tableData.map(r => 
+          r.id === row.id 
+            ? { ...r, is_deleted: currentlyDeleted ? 'false' : 'true' }
+            : r
+        );
+        setTableData(updatedData);
       }
     } catch (error) {
       console.error('Error toggling soft delete:', error);
@@ -180,7 +190,9 @@ const SimpleCrudApp: React.FC = () => {
       });
       
       if (response.ok) {
-        fetchTableData(selectedTable);
+        // Update local state directly instead of refetching
+        const updatedData = tableData.filter(r => r.id !== id);
+        setTableData(updatedData);
       } else {
         alert('Failed to delete row. Please try again.');
       }
@@ -199,7 +211,10 @@ const SimpleCrudApp: React.FC = () => {
       });
       
       if (response.ok) {
-        fetchTableData(selectedTable);
+        const newRowData = await response.json();
+        // Update local state directly instead of refetching
+        setTableData(prev => [...prev, newRowData]);
+        
         // Reset new row form
         const initialRow: Record<string, any> = {};
         tableSchema.forEach((col: TableSchema) => {
@@ -389,6 +404,22 @@ const SimpleCrudApp: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <h4 style={{ color: '#444', margin: 0 }}>Table Data</h4>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                onClick={() => fetchTableData(selectedTable)}
+                style={{
+                  padding: '8px 16px',
+                  // backgroundColor: '#6c757d',
+                  // color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 'bold'
+                }}
+                title="Refresh table data from database"
+              >
+                Reload Table
+              </button>
               {tableSchema.some(col => col.column_name === 'is_deleted') && (
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#444', fontSize: '14px' }}>
                   <input
