@@ -37,6 +37,9 @@ const SimpleCrudApp: React.FC = () => {
   const [resizeStartWidth, setResizeStartWidth] = useState<number>(0);
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [isDeletingTable, setIsDeletingTable] = useState<boolean>(false);
+  const [sortColumn, setSortColumn] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortedData, setSortedData] = useState<any[]>([]);
 
   // Default column widths
   const defaultColumnWidth = 150;
@@ -97,6 +100,49 @@ const SimpleCrudApp: React.FC = () => {
       setFilteredData(filtered);
     }
   }, [searchTerm, tableData, tableSchema, hideDeleted]);
+
+  // Apply sorting when sortColumn, sortDirection, or filteredData changes
+  useEffect(() => {
+    if (sortColumn && filteredData.length > 0) {
+      const sorted = [...filteredData].sort((a, b) => {
+        const aValue = a[sortColumn];
+        const bValue = b[sortColumn];
+        
+        // Handle null/undefined values
+        if (aValue === null || aValue === undefined) return sortDirection === 'asc' ? -1 : 1;
+        if (bValue === null || bValue === undefined) return sortDirection === 'asc' ? 1 : -1;
+        
+        // Handle numeric values
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+        
+        // Handle boolean values
+        if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
+          return sortDirection === 'asc' ? (aValue === bValue ? 0 : aValue ? 1 : -1) : (aValue === bValue ? 0 : aValue ? -1 : 1);
+        }
+        
+        // Handle string values (case-insensitive)
+        const aStr = String(aValue).toLowerCase();
+        const bStr = String(bValue).toLowerCase();
+        if (sortDirection === 'asc') {
+          return aStr.localeCompare(bStr);
+        } else {
+          return bStr.localeCompare(aStr);
+        }
+      });
+      
+      setSortedData(sorted);
+    } else {
+      // If no sorting, just use filtered data
+      setSortedData(filteredData);
+    }
+  }, [sortColumn, sortDirection, filteredData]);
+
+  // Initialize sortedData when filteredData changes (for initial load)
+  useEffect(() => {
+    setSortedData(filteredData);
+  }, [filteredData]);
 
   // Handle mouse move for column resizing
   useEffect(() => {
@@ -265,15 +311,21 @@ const SimpleCrudApp: React.FC = () => {
   };
 
   const handleRowClick = async (rowIndex: number) => {
+    // Find the actual row in the original tableData
+    const actualRow = sortedData[rowIndex];
+    const actualRowIndex = tableData.findIndex(row => row.id === actualRow.id);
+    
+    if (actualRowIndex === -1) return;
+    
     // If clicking the same row, ensure it's in edit mode
     if (editingRow === null) {
-      setEditingRow(rowIndex);
+      setEditingRow(actualRowIndex);
       return;
     }
-    if (editingRow === rowIndex) return;
+    if (editingRow === actualRowIndex) return;
     const saved = await handleSave(editingRow);
     if (saved) {
-      setEditingRow(rowIndex);
+      setEditingRow(actualRowIndex);
     }
   };
 
@@ -403,6 +455,17 @@ const SimpleCrudApp: React.FC = () => {
 
   const handleNewRowChange = (field: string, value: any) => {
     setNewRow(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleHeaderClick = (columnName: string) => {
+    if (sortColumn === columnName) {
+      // If clicking the same column, toggle direction
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      // If clicking a new column, set it as sort column with ascending direction
+      setSortColumn(columnName);
+      setSortDirection('asc');
+    }
   };
 
   const getInputType = (columnName: string, dataType: string) => {
@@ -598,7 +661,7 @@ const SimpleCrudApp: React.FC = () => {
                 className="search-input"
               />
               <span className="row-count">
-                {filteredData.length} of {tableData.length} rows
+                {sortedData.length} of {tableData.length} rows
               </span>
             </div>
           </div>
@@ -626,11 +689,18 @@ const SimpleCrudApp: React.FC = () => {
                     >
                       <div className="column-header">
                         <span 
+                          onClick={() => handleHeaderClick(col.column_name)}
                           onDoubleClick={() => resetColumnWidth(col.column_name)}
-                          className="column-name"
-                          title="Double-click to reset column width"
+                          className={`column-name ${sortColumn === col.column_name ? 'sortable-header sorted' : 'sortable-header'}`}
+                          title={`Click to sort by ${col.column_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}${sortColumn === col.column_name ? ` (currently ${sortDirection === 'asc' ? 'ascending' : 'descending'})` : ''}. Double-click to reset column width.`}
+                          style={{ cursor: 'pointer' }}
                         >
                           {col.column_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          {sortColumn === col.column_name && (
+                            <span className="sort-indicator">
+                              {sortDirection === 'asc' ? ' ↑' : ' ↓'}
+                            </span>
+                          )}
                         </span>
                         <div
                           className="column-resizer"
@@ -649,103 +719,109 @@ const SimpleCrudApp: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((row, rowIndex) => (
-                <tr key={row.id || rowIndex} onClick={() => handleRowClick(rowIndex)}>
-                  {tableSchema.map(col => (
-                    <td key={col.column_name} style={{ 
-                      width: columnWidths[col.column_name] || defaultColumnWidth
-                    }}>
-                      {editingRow === rowIndex && col.column_name !== 'id' && col.column_name !== 'created_at' ? (
-                        renderInput(
-                          col,
-                          row[col.column_name],
-                          (value) => handleInputChange(rowIndex, col.column_name, value),
-                          (e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleSave(rowIndex);
+              {sortedData.map((row, displayIndex) => {
+                // Find the actual row index in the original tableData
+                const actualRowIndex = tableData.findIndex(r => r.id === row.id);
+                const isEditing = editingRow === actualRowIndex;
+                
+                return (
+                  <tr key={row.id || displayIndex} onClick={() => handleRowClick(displayIndex)}>
+                    {tableSchema.map(col => (
+                      <td key={col.column_name} style={{ 
+                        width: columnWidths[col.column_name] || defaultColumnWidth
+                      }}>
+                        {isEditing && col.column_name !== 'id' && col.column_name !== 'created_at' ? (
+                          renderInput(
+                            col,
+                            row[col.column_name],
+                            (value) => handleInputChange(actualRowIndex, col.column_name, value),
+                            (e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleSave(actualRowIndex);
+                              }
                             }
-                          }
-                        )
+                          )
+                        ) : (
+                          <div className={col.column_name === 'is_deleted' && row[col.column_name] === 'true' ? 'soft-deleted' : ''}>
+                            {renderCellContent(row[col.column_name])}
+                          </div>
+                        )}
+                      </td>
+                    ))}
+                    <td style={{ textAlign: 'center' }}>
+                      {isEditing ? (
+                        <div className="action-buttons">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleSave(actualRowIndex); }}
+                            className="btn btn-small"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleCancel(); }}
+                            className="btn btn-small"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       ) : (
-                        <div className={col.column_name === 'is_deleted' && row[col.column_name] === 'true' ? 'soft-deleted' : ''}>
-                          {renderCellContent(row[col.column_name])}
+                        <div className="action-buttons">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEdit(actualRowIndex); }}
+                            className="btn btn-small"
+                          >
+                            Edit
+                          </button>
+                          <div 
+                            className="delete-button-container"
+                            onMouseEnter={(e) => {
+                              const fullyDeleteBtn = e.currentTarget.querySelector('[data-fully-delete]') as HTMLElement;
+                              if (fullyDeleteBtn) fullyDeleteBtn.style.display = 'flex';
+                            }}
+                            onMouseLeave={(e) => {
+                              const fullyDeleteBtn = e.currentTarget.querySelector('[data-fully-delete]') as HTMLElement;
+                              if (fullyDeleteBtn) fullyDeleteBtn.style.display = 'none';
+                            }}
+                          >
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDelete(row); }}
+                              disabled={!tableSchema.some(col => 
+                                col.column_name === 'is_deleted'
+                              )}
+                              className="btn btn-small"
+                              style={{
+                                cursor: tableSchema.some(col => 
+                                  col.column_name === 'is_deleted'
+                                ) ? 'pointer' : 'not-allowed',
+                                opacity: tableSchema.some(col => 
+                                  col.column_name === 'is_deleted'
+                                ) ? 1 : 0.7
+                              }}
+                              title={tableSchema.some(col => 
+                                col.column_name === 'is_deleted'
+                              ) ? (String(row['is_deleted']) === 'true' ? 'Un-Delete this row' : 'Soft delete this row') : 'Delete functionality disabled - table missing "is_deleted" column'}
+                            >
+                              {String(row['is_deleted']) === 'true' ? 'Re-Add' : 'Delete'}
+                            </button>
+                            
+                            {/* Fully Delete button - appears on hover */}
+                            <button
+                              data-fully-delete
+                              onClick={(e) => { e.stopPropagation(); handleFullyDelete(row.id); }}
+                              className="fully-delete-btn"
+                              title="Permanently delete this row from database"
+                            >
+                              ✕
+                            </button>
+                          </div>
                         </div>
                       )}
                     </td>
-                  ))}
-                  <td style={{ textAlign: 'center' }}>
-                    {editingRow === rowIndex ? (
-                      <div className="action-buttons">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleSave(rowIndex); }}
-                          className="btn btn-small"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleCancel(); }}
-                          className="btn btn-small"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="action-buttons">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleEdit(rowIndex); }}
-                          className="btn btn-small"
-                        >
-                          Edit
-                        </button>
-                        <div 
-                          className="delete-button-container"
-                          onMouseEnter={(e) => {
-                            const fullyDeleteBtn = e.currentTarget.querySelector('[data-fully-delete]') as HTMLElement;
-                            if (fullyDeleteBtn) fullyDeleteBtn.style.display = 'flex';
-                          }}
-                          onMouseLeave={(e) => {
-                            const fullyDeleteBtn = e.currentTarget.querySelector('[data-fully-delete]') as HTMLElement;
-                            if (fullyDeleteBtn) fullyDeleteBtn.style.display = 'none';
-                          }}
-                        >
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDelete(row); }}
-                            disabled={!tableSchema.some(col => 
-                              col.column_name === 'is_deleted'
-                            )}
-                            className="btn btn-small"
-                            style={{
-                              cursor: tableSchema.some(col => 
-                                col.column_name === 'is_deleted'
-                              ) ? 'pointer' : 'not-allowed',
-                              opacity: tableSchema.some(col => 
-                                col.column_name === 'is_deleted'
-                              ) ? 1 : 0.7
-                            }}
-                            title={tableSchema.some(col => 
-                              col.column_name === 'is_deleted'
-                            ) ? (String(row['is_deleted']) === 'true' ? 'Un-Delete this row' : 'Soft delete this row') : 'Delete functionality disabled - table missing "is_deleted" column'}
-                          >
-                            {String(row['is_deleted']) === 'true' ? 'Re-Add' : 'Delete'}
-                          </button>
-                          
-                          {/* Fully Delete button - appears on hover */}
-                          <button
-                            data-fully-delete
-                            onClick={(e) => { e.stopPropagation(); handleFullyDelete(row.id); }}
-                            className="fully-delete-btn"
-                            title="Permanently delete this row from database"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

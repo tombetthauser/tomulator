@@ -363,6 +363,31 @@ body {
   cursor: pointer;
 }
 
+.sortable-header {
+  cursor: pointer;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.sortable-header:hover {
+  color: #007bff;
+  background-color: rgba(0, 123, 255, 0.05);
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+}
+
+.sortable-header.sorted {
+  color: #007bff;
+  font-weight: 600;
+}
+
+.sort-indicator {
+  margin-left: 4px;
+  font-weight: bold;
+  color: #007bff;
+}
+
 .column-resizer {
   position: absolute;
   right: 0;
