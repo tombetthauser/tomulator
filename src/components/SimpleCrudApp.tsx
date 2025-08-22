@@ -127,7 +127,7 @@ const SimpleCrudApp: React.FC = () => {
     fetchTableData(selectedTable); // Refresh to reset any changes
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (row: any) => {
     // Check if table has an "is_deleted" column
     const hasIsDeletedColumn = tableSchema.some(col => 
       col.column_name === 'is_deleted'
@@ -138,11 +138,15 @@ const SimpleCrudApp: React.FC = () => {
       return;
     }
     
-    if (!confirm('Are you sure you want to delete this row?')) return;
+    const currentlyDeleted = String(row['is_deleted']) === 'true';
+    const actionWord = currentlyDeleted ? 'restore (un-delete)' : 'soft delete';
+    if (!confirm(`Are you sure you want to ${actionWord} this row?`)) return;
     
     try {
-      const response = await fetch(`/api/tables/${selectedTable}/rows/${id}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/tables/${selectedTable}/rows/${row.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_deleted: currentlyDeleted ? 'false' : 'true' })
       });
       
       if (response.ok) {
@@ -510,7 +514,7 @@ const SimpleCrudApp: React.FC = () => {
                           }}
                         >
                           <button
-                            onClick={() => handleDelete(row.id)}
+                            onClick={() => handleDelete(row)}
                             disabled={!tableSchema.some(col => 
                               col.column_name === 'is_deleted'
                             )}
@@ -533,9 +537,9 @@ const SimpleCrudApp: React.FC = () => {
                             }}
                             title={tableSchema.some(col => 
                               col.column_name === 'is_deleted'
-                            ) ? 'Delete this row' : 'Delete functionality disabled - table missing "is_deleted" column'}
+                            ) ? (String(row['is_deleted']) === 'true' ? 'Un-Delete this row' : 'Soft delete this row') : 'Delete functionality disabled - table missing "is_deleted" column'}
                           >
-                            Delete
+                            {String(row['is_deleted']) === 'true' ? 'Re-Add' : 'Delete'}
                           </button>
                           
                           {/* Fully Delete button - appears on hover */}
