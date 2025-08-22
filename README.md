@@ -10,6 +10,8 @@ A simple, generic CRUD (Create, Read, Update, Delete) application built with Bun
 - **Delete Rows**: Remove rows with confirmation dialog
 - **Real-time Updates**: Changes are immediately reflected in the database
 - **Responsive Design**: Clean, modern UI with HTML tables
+- **Table Creation**: Create new database tables with custom columns and data types
+- **Navigation**: Easy navigation between database management and table creation
 
 ## Tech Stack
 
@@ -114,7 +116,8 @@ bun run start:prod    # Start production server from dist/
 ```
 ├── src/
 │   ├── components/
-│   │   └── CrudApp.tsx          # Main React component
+│   │   ├── SimpleCrudApp.tsx    # Main React component
+│   │   └── NewTableCreator.tsx  # Table creation component
 │   ├── database/
 │   │   ├── connection.ts         # Database connection
 │   │   ├── queries.ts           # Database queries
@@ -168,6 +171,40 @@ The application works with your actual database tables:
 - `POST /api/tables/:tableName/rows` - Insert new row
 - `PUT /api/tables/:tableName/rows/:id` - Update row
 - `DELETE /api/tables/:tableName/rows/:id` - Delete row
+- `POST /api/tables/create` - Create new table
+
+## Table Creation Feature
+
+The application now includes a powerful table creation feature that allows you to:
+
+- **Create Custom Tables**: Design tables with any number of columns
+- **Flexible Data Types**: Support for all major PostgreSQL data types including:
+  - Numeric: INTEGER, BIGINT, SERIAL, NUMERIC, DECIMAL, REAL
+  - Text: TEXT, VARCHAR, CHAR
+  - Date/Time: TIMESTAMP, DATE, TIME
+  - Boolean: BOOLEAN
+  - JSON: JSON, JSONB
+  - UUID: UUID
+- **Column Constraints**: Set primary keys, nullable constraints, and default values
+- **Auto-increment**: Automatic ID generation for primary key columns
+- **Built-in Timestamps**: Automatic `created_at` column for all new tables
+
+### How to Use
+
+1. Click the **"+ Create New Table"** button from the main database manager
+2. Enter a table name (must start with a letter or underscore)
+3. Add columns with your desired data types and constraints
+4. Set primary key and nullable constraints as needed
+5. Submit to create the table in your database
+6. The new table will immediately appear in your table selection dropdown
+
+### Best Practices
+
+- Always include a primary key column (usually an ID)
+- Use SERIAL for auto-incrementing primary keys
+- Consider adding an `is_deleted` column for soft delete functionality
+- VARCHAR and CHAR columns require specifying a length
+- Primary key columns cannot be nullable
 
 ## Usage
 

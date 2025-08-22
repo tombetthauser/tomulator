@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface TableInfo {
   table_name: string;
@@ -17,6 +18,7 @@ interface ColumnWidths {
 }
 
 const SimpleCrudApp: React.FC = () => {
+  const navigate = useNavigate();
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [tableData, setTableData] = useState<any[]>([]);
@@ -164,24 +166,13 @@ const SimpleCrudApp: React.FC = () => {
     
     if (wordWrap) {
       return (
-        <span style={{ 
-          wordBreak: 'break-word',
-          whiteSpace: 'pre-wrap',
-          display: 'block',
-          width: '100%'
-        }}>
+        <span className="cell-content">
           {displayValue}
         </span>
       );
     } else {
       return (
-        <span style={{ 
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          display: 'block',
-          width: '100%'
-        }} title={displayValue}>
+        <span className="cell-content-nowrap" title={displayValue}>
           {displayValue}
         </span>
       );
@@ -393,12 +384,7 @@ const SimpleCrudApp: React.FC = () => {
           onChange={(e) => onChange(e.target.value)}
           onClick={(e) => e.stopPropagation()}
           onKeyDown={onKeyDown}
-          style={{
-            width: '100%',
-            padding: '4px',
-            border: '1px solid #ccc',
-            borderRadius: '2px'
-          }}
+          className="form-select-small"
         >
           <option value="true">true</option>
           <option value="false">false</option>
@@ -414,12 +400,7 @@ const SimpleCrudApp: React.FC = () => {
           onChange={(e) => onChange(parseInt(e.target.value) || 0)}
           onClick={(e) => e.stopPropagation()}
           onKeyDown={onKeyDown}
-          style={{
-            width: '100%',
-            padding: '4px',
-            border: '1px solid #ccc',
-            borderRadius: '2px'
-          }}
+          className="form-input"
         />
       );
     }
@@ -431,12 +412,7 @@ const SimpleCrudApp: React.FC = () => {
         onChange={(e) => onChange(e.target.value)}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={onKeyDown}
-        style={{
-          width: '100%',
-          padding: '4px',
-          border: '1px solid #ccc',
-          borderRadius: '2px'
-        }}
+        className="form-input"
         placeholder={column.column_name}
       />
     );
@@ -454,8 +430,16 @@ const SimpleCrudApp: React.FC = () => {
   };
 
   return (
-    <div className="crud-app" style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1 style={{ color: '#333', marginBottom: '20px' }}>Tomulator Database Manager Test App</h1>
+    <div className="crud-app">
+      <div className="header-container">
+        <h1 className="page-title">Tomulator Database Manager Test App</h1>
+        <button
+          onClick={() => navigate('/new-table')}
+          className="btn btn-primary"
+        >
+          + Create New Table
+        </button>
+      </div>
       
       <div style={{ marginBottom: '20px' }}>
         <label htmlFor="table-select" style={{ marginRight: '10px', fontWeight: 'bold' }}>
@@ -465,13 +449,7 @@ const SimpleCrudApp: React.FC = () => {
           id="table-select"
           value={selectedTable}
           onChange={(e) => setSelectedTable(e.target.value)}
-          style={{ 
-            padding: '8px 12px', 
-            fontSize: '16px', 
-            borderRadius: '4px', 
-            border: '1px solid #ccc',
-            minWidth: '200px'
-          }}
+          className="form-select"
         >
           <option value="">Choose a table...</option>
           {tables.map(table => (
@@ -484,16 +462,16 @@ const SimpleCrudApp: React.FC = () => {
 
       {selectedTable && (
         <div style={{ marginBottom: '20px' }}>
-          <div style={{ marginTop: '35px', marginBottom: '50px'}}>
-            <h4 style={{ color: '#444', marginBottom: '10px' }}>Add New Row</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '20px' }}>
+          <div className="add-row-section">
+            <h4 className="add-row-title">Add New Row</h4>
+            <div className="form-grid">
               {tableSchema.map(col => {
                 if (col.column_name === 'id' || col.column_name === 'created_at') {
                   return null;
                 }
                 return (
-                  <div key={col.column_name} style={{ display: col.column_name === 'is_deleted' ? 'none' : 'inline-block', marginRight: '10px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '14px' }}>
+                  <div key={col.column_name} className={`add-row-field ${col.column_name === 'is_deleted' ? 'hidden' : ''}`}>
+                    <label className="add-row-label">
                       {col.column_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
                     </label>
                     {renderInput(col, newRow[col.column_name], (value) => handleNewRowChange(col.column_name, value))}
@@ -503,14 +481,7 @@ const SimpleCrudApp: React.FC = () => {
             </div>
             <button
               onClick={handleAddRow}
-              style={{
-                padding: '8px 16px',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                backgroundColor: '#f8f9fa'
-              }}
+              className="btn"
             >
               Add Row
             </button>
@@ -521,24 +492,17 @@ const SimpleCrudApp: React.FC = () => {
 
       {selectedTable && (
         <div style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <h4 style={{ color: '#444', margin: 0 }}>Table Data</h4>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="controls-container">
+            <h4 className="section-title-no-margin">Table Data</h4>
+            <div className="controls-right">
               <button
                 onClick={() => fetchTableData(selectedTable)}
-                style={{
-                  padding: '8px 16px',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  backgroundColor: '#f8f9fa'
-                }}
+                className="btn"
                 title="Refresh table data from database"
               >
                 Reload Table
               </button>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#444', fontSize: '14px' }}>
+              <label className="control-item">
                 <input
                   type="checkbox"
                   checked={wordWrap}
@@ -546,7 +510,7 @@ const SimpleCrudApp: React.FC = () => {
                 />
                 Word wrap
               </label>
-              <span style={{ color: '#666', fontSize: '12px', fontStyle: 'italic' }}>
+              <span className="control-hint">
                 💡 Drag column edges to resize
               </span>
               <button
@@ -565,20 +529,13 @@ const SimpleCrudApp: React.FC = () => {
                   });
                   setColumnWidths(initialWidths);
                 }}
-                style={{
-                  padding: '8px 16px',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  backgroundColor: '#f8f9fa'
-                }}
+                className="btn"
                 title="Reset all column widths to default"
               >
                 Reset Columns
               </button>
               {tableSchema.some(col => col.column_name === 'is_deleted') && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#444', fontSize: '14px' }}>
+                <label className="control-item">
                   <input
                     type="checkbox"
                     checked={hideDeleted}
@@ -592,15 +549,9 @@ const SimpleCrudApp: React.FC = () => {
                 placeholder="Search in all fields..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  padding: '8px 12px',
-                  border: '1px solid #ccc',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  minWidth: '200px'
-                }}
+                className="search-input"
               />
-              <span style={{ color: '#666', fontSize: '14px' }}>
+              <span className="row-count">
                 {filteredData.length} of {tableData.length} rows
               </span>
             </div>
@@ -609,54 +560,34 @@ const SimpleCrudApp: React.FC = () => {
       )}
 
       {loading && (
-        <div style={{ textAlign: 'center', padding: '20px' }}>
-          <div style={{ fontSize: '18px', color: '#666' }}>Loading...</div>
+        <div className="loading">
+          <div className="loading-text">Loading...</div>
         </div>
       )}
 
       {selectedTable && !loading && filteredData.length > 0 && (
-        <div style={{ overflowX: 'auto', border: '1px solid #ddd', borderRadius: '4px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+        <div className="table-container">
+          <table className="table">
             <thead>
-              <tr style={{ backgroundColor: '#f8f9fa' }}>
-                {tableSchema.map(col => (
-                                      <th key={col.column_name} style={{ 
-                      padding: '12px 8px', 
-                      textAlign: 'left', 
-                      borderBottom: '2px solid #dee2e6',
-                      fontSize: '14px',
-                      fontWeight: 'bold',
-                      color: '#495057',
-                      width: columnWidths[col.column_name] || defaultColumnWidth,
-                      position: 'relative',
-                      cursor: 'default',
-                      backgroundColor: isResizing && resizeColumn === col.column_name ? 'rgba(0, 123, 255, 0.1)' : 'transparent',
-                      transition: 'background-color 0.2s ease'
-                    }}>
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center',
-                      width: '100%'
-                    }}>
-                      <span 
-                        onDoubleClick={() => resetColumnWidth(col.column_name)}
-                        style={{ cursor: 'pointer' }}
-                        title="Double-click to reset column width"
-                      >
-                        {col.column_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </span>
-                                              <div
-                          style={{
-                            position: 'absolute',
-                            right: 0,
-                            top: 0,
-                            bottom: 0,
-                            width: '8px',
-                            cursor: 'col-resize',
-                            backgroundColor: 'transparent',
-                            transition: 'background-color 0.2s ease'
-                          }}
+                              <tr>
+                  {tableSchema.map(col => (
+                    <th key={col.column_name} 
+                      style={{ 
+                        width: columnWidths[col.column_name] || defaultColumnWidth,
+                        backgroundColor: isResizing && resizeColumn === col.column_name ? 'rgba(0, 123, 255, 0.1)' : 'transparent'
+                      }}
+                      className={isResizing && resizeColumn === col.column_name ? 'column-resizing' : ''}
+                    >
+                      <div className="column-header">
+                        <span 
+                          onDoubleClick={() => resetColumnWidth(col.column_name)}
+                          className="column-name"
+                          title="Double-click to reset column width"
+                        >
+                          {col.column_name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </span>
+                        <div
+                          className="column-resizer"
                           onMouseDown={(e) => startResize(e, col.column_name)}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.backgroundColor = 'rgba(0, 123, 255, 0.1)';
@@ -665,34 +596,18 @@ const SimpleCrudApp: React.FC = () => {
                             e.currentTarget.style.backgroundColor = 'transparent';
                           }}
                         />
-                    </div>
-                  </th>
-                ))}
-                <th style={{ 
-                  padding: '12px 8px', 
-                  textAlign: 'center', 
-                  borderBottom: '2px solid #dee2e6',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  color: '#495057',
-                  width: '120px'
-                }}>Actions</th>
+                      </div>
+                    </th>
+                  ))}
+                  <th style={{ width: '120px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredData.map((row, rowIndex) => (
-                <tr key={row.id || rowIndex} style={{ 
-                  backgroundColor: rowIndex % 2 === 0 ? '#ffffff' : '#f8f9fa',
-                  borderBottom: '1px solid #dee2e6',
-                  cursor: 'pointer'
-                }} onClick={() => handleRowClick(rowIndex)}>
+                <tr key={row.id || rowIndex} onClick={() => handleRowClick(rowIndex)}>
                   {tableSchema.map(col => (
                     <td key={col.column_name} style={{ 
-                      padding: '8px', 
-                      borderBottom: '1px solid #dee2e6',
-                      fontSize: '14px',
-                      width: columnWidths[col.column_name] || defaultColumnWidth,
-                      overflow: 'hidden'
+                      width: columnWidths[col.column_name] || defaultColumnWidth
                     }}>
                       {editingRow === rowIndex && col.column_name !== 'id' && col.column_name !== 'created_at' ? (
                         renderInput(
@@ -708,66 +623,38 @@ const SimpleCrudApp: React.FC = () => {
                           }
                         )
                       ) : (
-                        <div style={{ 
-                          color: col.column_name === 'is_deleted' && row[col.column_name] === 'true' ? '#dc3545' : 'inherit',
-                          fontWeight: col.column_name === 'is_deleted' && row[col.column_name] === 'true' ? 'bold' : 'normal'
-                        }}>
+                        <div className={col.column_name === 'is_deleted' && row[col.column_name] === 'true' ? 'soft-deleted' : ''}>
                           {renderCellContent(row[col.column_name])}
                         </div>
                       )}
                     </td>
                   ))}
-                  <td style={{ padding: '8px', borderBottom: '1px solid #dee2e6', textAlign: 'center' }}>
+                  <td style={{ textAlign: 'center' }}>
                     {editingRow === rowIndex ? (
-                      <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                      <div className="action-buttons">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleSave(rowIndex); }}
-                          style={{
-                            padding: '6px 12px',
-                            border: '1px solid #ccc',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            backgroundColor: '#f8f9fa'
-                          }}
+                          className="btn btn-small"
                         >
                           Save
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleCancel(); }}
-                          style={{
-                            padding: '6px 12px',
-                            border: '1px solid #ccc',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            backgroundColor: '#f8f9fa'
-                          }}
+                          className="btn btn-small"
                         >
                           Cancel
                         </button>
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                      <div className="action-buttons">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleEdit(rowIndex); }}
-                          style={{
-                            padding: '6px 12px',
-                            border: '1px solid #ccc',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            backgroundColor: '#f8f9fa'
-                          }}
+                          className="btn btn-small"
                         >
                           Edit
                         </button>
                         <div 
-                          style={{ 
-                            position: 'relative', 
-                            display: 'inline-block',
-                            cursor: 'default'
-                          }}
+                          className="delete-button-container"
                           onMouseEnter={(e) => {
                             const fullyDeleteBtn = e.currentTarget.querySelector('[data-fully-delete]') as HTMLElement;
                             if (fullyDeleteBtn) fullyDeleteBtn.style.display = 'flex';
@@ -782,15 +669,11 @@ const SimpleCrudApp: React.FC = () => {
                             disabled={!tableSchema.some(col => 
                               col.column_name === 'is_deleted'
                             )}
+                            className="btn btn-small"
                             style={{
-                              padding: '6px 12px',
-                              border: '1px solid #ccc',
-                              borderRadius: '4px',
                               cursor: tableSchema.some(col => 
                                 col.column_name === 'is_deleted'
                               ) ? 'pointer' : 'not-allowed',
-                              fontSize: '12px',
-                              backgroundColor: '#f8f9fa',
                               opacity: tableSchema.some(col => 
                                 col.column_name === 'is_deleted'
                               ) ? 1 : 0.7
@@ -806,27 +689,7 @@ const SimpleCrudApp: React.FC = () => {
                           <button
                             data-fully-delete
                             onClick={(e) => { e.stopPropagation(); handleFullyDelete(row.id); }}
-                            style={{
-                              position: 'absolute',
-                              top: '-8px',
-                              right: '-8px',
-                              width: '20px',
-                              height: '20px',
-                              padding: '0',
-                              backgroundColor: '#dc0000',
-                              color: 'white',
-                              border: '2px solid white',
-                              borderRadius: '50%',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              fontWeight: 'bold',
-                              display: 'none',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
-                              zIndex: 10,
-                              transition: 'all 0.2s ease-in-out'
-                            }}
+                            className="fully-delete-btn"
                             title="Permanently delete this row from database"
                           >
                             ✕
@@ -843,42 +706,21 @@ const SimpleCrudApp: React.FC = () => {
       )}
 
       {selectedTable && !loading && filteredData.length === 0 && tableData.length > 0 && (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '40px', 
-          color: '#666',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '4px',
-          border: '1px solid #dee2e6'
-        }}>
+        <div className="info-box">
           No results found for "{searchTerm}". Try a different search term.
         </div>
       )}
 
       {selectedTable && !loading && tableData.length === 0 && (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '40px', 
-          color: '#666',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '4px',
-          border: '1px solid #dee2e6'
-        }}>
+        <div className="info-box">
           No data found in this table. Use the form above to add your first row!
         </div>
       )}
 
       {!selectedTable && (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '40px', 
-          color: '#666',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '4px',
-          border: '1px solid #dee2e6'
-        }}>
-          <h3 style={{ color: '#333', marginBottom: '15px' }}>Welcome to Tomulator Database Manager Test App</h3>
-          <p style={{ marginBottom: '20px' }}>
+        <div className="info-box">
+          <h3 className="info-title">Welcome to Tomulator Database Manager Test App</h3>
+          <p className="info-text">
             Select a table from the dropdown above to view and edit data.
           </p>
           {/* <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginTop: '30px' }}>

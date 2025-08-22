@@ -112,3 +112,78 @@ export async function deleteRow(tableName: string, id: number, hardDelete: boole
     }
   }
 }
+
+// Create new table
+export async function createTable(tableName: string, columns: Array<{
+  name: string;
+  type: string;
+  isNullable: boolean;
+  isPrimaryKey: boolean;
+  defaultValue: string;
+  isAutoIncrement: boolean;
+}>): Promise<void> {
+  // Build column definitions
+  const columnDefinitions = columns.map(col => {
+    let definition = `${col.name} `;
+    
+    // Handle data types with special cases
+    if (col.type === 'VARCHAR' || col.type === 'CHAR') {
+      const length = col.defaultValue || '255';
+      definition += `${col.type}(${length})`;
+    } else if (col.type === 'NUMERIC' || col.type === 'DECIMAL') {
+      const precision = col.defaultValue || '10,2';
+      definition += `${col.type}(${precision})`;
+    } else {
+      definition += col.type;
+    }
+    
+    // Add constraints
+    if (!col.isNullable) {
+      definition += ' NOT NULL';
+    }
+    
+    if (col.isPrimaryKey) {
+      definition += ' PRIMARY KEY';
+    }
+    
+    if (col.isAutoIncrement && (col.type === 'INTEGER' || col.type === 'BIGINT')) {
+      definition += ' GENERATED ALWAYS AS IDENTITY';
+    }
+    
+    if (col.defaultValue && col.type !== 'SERIAL' && !col.isAutoIncrement) {
+      if (col.type === 'BOOLEAN') {
+        definition += ` DEFAULT ${col.defaultValue}`;
+      } else if (col.type === 'TEXT' || col.type === 'VARCHAR' || col.type === 'CHAR') {
+        definition += ` DEFAULT '${col.defaultValue}'`;
+      } else {
+        definition += ` DEFAULT ${col.defaultValue}`;
+      }
+    }
+    
+    return definition;
+  });
+  
+  const createTableQuery = `
+    CREATE TABLE ${tableName} (
+      ${columnDefinitions.join(',\n      ')}
+    )
+  `;
+  
+  await pool.query(createTableQuery);
+  
+  // Add created_at column if it doesn't exist
+  const hasCreatedAtQuery = `
+    SELECT column_name 
+    FROM information_schema.columns 
+    WHERE table_name = $1 AND column_name = 'created_at'
+  `;
+  const hasCreatedAtResult = await pool.query(hasCreatedAtQuery, [tableName]);
+  
+  if (hasCreatedAtResult.rows.length === 0) {
+    const addCreatedAtQuery = `
+      ALTER TABLE ${tableName} 
+      ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    `;
+    await pool.query(addCreatedAtQuery);
+  }
+}

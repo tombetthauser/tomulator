@@ -1,11 +1,12 @@
 import express from 'express';
-import { getAllTables, getTableSchema, getTableData, insertRow, updateRow, deleteRow } from './database/queries';
+import { getAllTables, getTableSchema, getTableData, insertRow, updateRow, deleteRow, createTable } from './database/queries';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.static('dist'));
+app.use(express.static('src')); // Also serve from src for development
 
 // API Routes
 app.get('/api/tables', async (req, res) => {
@@ -96,6 +97,26 @@ app.delete('/api/tables/:tableName/rows/:id/hard-delete', async (req, res) => {
   }
 });
 
+// Create new table endpoint
+app.post('/api/tables/create', async (req, res) => {
+  try {
+    const { tableName, columns } = req.body;
+    
+    if (!tableName || !columns || !Array.isArray(columns)) {
+      return res.status(400).json({ error: 'Invalid request data' });
+    }
+    
+    await createTable(tableName, columns);
+    res.json({ message: `Table "${tableName}" created successfully` });
+  } catch (error) {
+    console.error('Create table error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create table', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // Serve React app for all other routes
 app.get('*', (req, res) => {
   res.sendFile('dist/index.html', { root: '.' });
@@ -105,8 +126,9 @@ const server = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 }).on('error', (err: any) => {
   if (err.code === 'EADDRINUSE') {
-    console.log(`Port ${PORT} is busy, trying ${PORT + 1}...`);
-    server.listen(PORT + 1);
+    const nextPort = Number(PORT) + 1;
+    console.log(`Port ${PORT} is busy, trying ${nextPort}...`);
+    server.listen(nextPort);
   } else {
     console.error('Server error:', err);
   }
